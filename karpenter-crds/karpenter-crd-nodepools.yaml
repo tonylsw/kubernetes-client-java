@@ -106,9 +106,6 @@ spec:
                         type: object
                       maxItems: 50
                       type: array
-                      x-kubernetes-validations:
-                        - message: "'schedule' must be set with 'duration'"
-                          rule: self.all(x, has(x.schedule) == has(x.duration))
                     consolidateAfter:
                       description: |-
                         ConsolidateAfter is the duration the controller will wait
@@ -135,11 +132,6 @@ spec:
                       pattern: ^(([0-9]+(s|m|h))+)|(Never)$
                       type: string
                   type: object
-                  x-kubernetes-validations:
-                    - message: consolidateAfter cannot be combined with consolidationPolicy=WhenUnderutilized
-                      rule: "has(self.consolidateAfter) ? self.consolidationPolicy != 'WhenUnderutilized' || self.consolidateAfter == 'Never' : true"
-                    - message: consolidateAfter must be specified with consolidationPolicy=WhenEmpty
-                      rule: "self.consolidationPolicy == 'WhenEmpty' ? has(self.consolidateAfter) : true"
                 limits:
                   additionalProperties:
                     anyOf:
@@ -177,19 +169,6 @@ spec:
                             More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels
                           type: object
                           maxProperties: 100
-                          x-kubernetes-validations:
-                            - message: label domain "kubernetes.io" is restricted
-                              rule: self.all(x, x in ["beta.kubernetes.io/instance-type", "failure-domain.beta.kubernetes.io/region",  "beta.kubernetes.io/os", "beta.kubernetes.io/arch", "failure-domain.beta.kubernetes.io/zone", "topology.kubernetes.io/zone", "topology.kubernetes.io/region", "kubernetes.io/arch", "kubernetes.io/os", "node.kubernetes.io/windows-build"] || x.find("^([^/]+)").endsWith("node.kubernetes.io") || x.find("^([^/]+)").endsWith("node-restriction.kubernetes.io") || !x.find("^([^/]+)").endsWith("kubernetes.io"))
-                            - message: label domain "k8s.io" is restricted
-                              rule: self.all(x, x.find("^([^/]+)").endsWith("kops.k8s.io") || !x.find("^([^/]+)").endsWith("k8s.io"))
-                            - message: label domain "karpenter.sh" is restricted
-                              rule: self.all(x, x in ["karpenter.sh/capacity-type", "karpenter.sh/nodepool"] || !x.find("^([^/]+)").endsWith("karpenter.sh"))
-                            - message: label "karpenter.sh/nodepool" is restricted
-                              rule: self.all(x, x != "karpenter.sh/nodepool")
-                            - message: label "kubernetes.io/hostname" is restricted
-                              rule: self.all(x, x != "kubernetes.io/hostname")
-                            - message: label domain "karpenter.k8s.aws" is restricted
-                              rule: self.all(x, x in ["karpenter.k8s.aws/instance-encryption-in-transit-supported", "karpenter.k8s.aws/instance-category", "karpenter.k8s.aws/instance-hypervisor", "karpenter.k8s.aws/instance-family", "karpenter.k8s.aws/instance-generation", "karpenter.k8s.aws/instance-local-nvme", "karpenter.k8s.aws/instance-size", "karpenter.k8s.aws/instance-cpu","karpenter.k8s.aws/instance-cpu-manufacturer","karpenter.k8s.aws/instance-memory", "karpenter.k8s.aws/instance-ebs-bandwidth", "karpenter.k8s.aws/instance-network-bandwidth", "karpenter.k8s.aws/instance-gpu-name", "karpenter.k8s.aws/instance-gpu-manufacturer", "karpenter.k8s.aws/instance-gpu-count", "karpenter.k8s.aws/instance-gpu-memory", "karpenter.k8s.aws/instance-accelerator-name", "karpenter.k8s.aws/instance-accelerator-manufacturer", "karpenter.k8s.aws/instance-accelerator-count"] || !x.find("^([^/]+)").endsWith("karpenter.k8s.aws"))
                       type: object
                     spec:
                       description: NodeClaimSpec describes the desired state of the NodeClaim
@@ -216,9 +195,6 @@ spec:
                                 pattern: ^((\d{1,2}(\.\d{1,2})?|100(\.0{1,2})?)%||(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?)$
                               description: EvictionHard is the map of signal names to quantities that define hard eviction thresholds
                               type: object
-                              x-kubernetes-validations:
-                                - message: valid keys for evictionHard are ['memory.available','nodefs.available','nodefs.inodesFree','imagefs.available','imagefs.inodesFree','pid.available']
-                                  rule: self.all(x, x in ['memory.available','nodefs.available','nodefs.inodesFree','imagefs.available','imagefs.inodesFree','pid.available'])
                             evictionMaxPodGracePeriod:
                               description: |-
                                 EvictionMaxPodGracePeriod is the maximum allowed grace period (in seconds) to use when terminating pods in
@@ -231,17 +207,11 @@ spec:
                                 pattern: ^((\d{1,2}(\.\d{1,2})?|100(\.0{1,2})?)%||(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?)$
                               description: EvictionSoft is the map of signal names to quantities that define soft eviction thresholds
                               type: object
-                              x-kubernetes-validations:
-                                - message: valid keys for evictionSoft are ['memory.available','nodefs.available','nodefs.inodesFree','imagefs.available','imagefs.inodesFree','pid.available']
-                                  rule: self.all(x, x in ['memory.available','nodefs.available','nodefs.inodesFree','imagefs.available','imagefs.inodesFree','pid.available'])
                             evictionSoftGracePeriod:
                               additionalProperties:
                                 type: string
                               description: EvictionSoftGracePeriod is the map of signal names to quantities that define grace periods for each eviction signal
                               type: object
-                              x-kubernetes-validations:
-                                - message: valid keys for evictionSoftGracePeriod are ['memory.available','nodefs.available','nodefs.inodesFree','imagefs.available','imagefs.inodesFree','pid.available']
-                                  rule: self.all(x, x in ['memory.available','nodefs.available','nodefs.inodesFree','imagefs.available','imagefs.inodesFree','pid.available'])
                             imageGCHighThresholdPercent:
                               description: |-
                                 ImageGCHighThresholdPercent is the percent of disk usage after which image
@@ -269,11 +239,6 @@ spec:
                                 pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               description: KubeReserved contains resources reserved for Kubernetes system components.
                               type: object
-                              x-kubernetes-validations:
-                                - message: valid keys for kubeReserved are ['cpu','memory','ephemeral-storage','pid']
-                                  rule: self.all(x, x=='cpu' || x=='memory' || x=='ephemeral-storage' || x=='pid')
-                                - message: kubeReserved value cannot be a negative resource quantity
-                                  rule: self.all(x, !self[x].startsWith('-'))
                             maxPods:
                               description: |-
                                 MaxPods is an override for the maximum number of pods that can run on
@@ -295,19 +260,7 @@ spec:
                                 pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               description: SystemReserved contains resources reserved for OS system daemons and kernel memory.
                               type: object
-                              x-kubernetes-validations:
-                                - message: valid keys for systemReserved are ['cpu','memory','ephemeral-storage','pid']
-                                  rule: self.all(x, x=='cpu' || x=='memory' || x=='ephemeral-storage' || x=='pid')
-                                - message: systemReserved value cannot be a negative resource quantity
-                                  rule: self.all(x, !self[x].startsWith('-'))
                           type: object
-                          x-kubernetes-validations:
-                            - message: imageGCHighThresholdPercent must be greater than imageGCLowThresholdPercent
-                              rule: "has(self.imageGCHighThresholdPercent) && has(self.imageGCLowThresholdPercent) ?  self.imageGCHighThresholdPercent > self.imageGCLowThresholdPercent  : true"
-                            - message: evictionSoft OwnerKey does not have a matching evictionSoftGracePeriod
-                              rule: has(self.evictionSoft) ? self.evictionSoft.all(e, (e in self.evictionSoftGracePeriod)):true
-                            - message: evictionSoftGracePeriod OwnerKey does not have a matching evictionSoft
-                              rule: has(self.evictionSoftGracePeriod) ? self.evictionSoftGracePeriod.all(e, (e in self.evictionSoft)):true
                         nodeClassRef:
                           description: NodeClassRef is a reference to an object that defines provider specific configuration
                           properties:
@@ -335,19 +288,6 @@ spec:
                                 type: string
                                 maxLength: 316
                                 pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*(\/))?([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]$
-                                x-kubernetes-validations:
-                                  - message: label domain "kubernetes.io" is restricted
-                                    rule: self in ["beta.kubernetes.io/instance-type", "failure-domain.beta.kubernetes.io/region", "beta.kubernetes.io/os", "beta.kubernetes.io/arch", "failure-domain.beta.kubernetes.io/zone", "topology.kubernetes.io/zone", "topology.kubernetes.io/region", "node.kubernetes.io/instance-type", "kubernetes.io/arch", "kubernetes.io/os", "node.kubernetes.io/windows-build"] || self.find("^([^/]+)").endsWith("node.kubernetes.io") || self.find("^([^/]+)").endsWith("node-restriction.kubernetes.io") || !self.find("^([^/]+)").endsWith("kubernetes.io")
-                                  - message: label domain "k8s.io" is restricted
-                                    rule: self.find("^([^/]+)").endsWith("kops.k8s.io") || !self.find("^([^/]+)").endsWith("k8s.io")
-                                  - message: label domain "karpenter.sh" is restricted
-                                    rule: self in ["karpenter.sh/capacity-type", "karpenter.sh/nodepool"] || !self.find("^([^/]+)").endsWith("karpenter.sh")
-                                  - message: label "karpenter.sh/nodepool" is restricted
-                                    rule: self != "karpenter.sh/nodepool"
-                                  - message: label "kubernetes.io/hostname" is restricted
-                                    rule: self != "kubernetes.io/hostname"
-                                  - message: label domain "karpenter.k8s.aws" is restricted
-                                    rule: self in ["karpenter.k8s.aws/instance-encryption-in-transit-supported", "karpenter.k8s.aws/instance-category", "karpenter.k8s.aws/instance-hypervisor", "karpenter.k8s.aws/instance-family", "karpenter.k8s.aws/instance-generation", "karpenter.k8s.aws/instance-local-nvme", "karpenter.k8s.aws/instance-size", "karpenter.k8s.aws/instance-cpu","karpenter.k8s.aws/instance-cpu-manufacturer","karpenter.k8s.aws/instance-memory", "karpenter.k8s.aws/instance-ebs-bandwidth", "karpenter.k8s.aws/instance-network-bandwidth", "karpenter.k8s.aws/instance-gpu-name", "karpenter.k8s.aws/instance-gpu-manufacturer", "karpenter.k8s.aws/instance-gpu-count", "karpenter.k8s.aws/instance-gpu-memory", "karpenter.k8s.aws/instance-accelerator-name", "karpenter.k8s.aws/instance-accelerator-manufacturer", "karpenter.k8s.aws/instance-accelerator-count"] || !self.find("^([^/]+)").endsWith("karpenter.k8s.aws")
                               minValues:
                                 description: |-
                                   This field is ALPHA and can be dropped or replaced at any time
