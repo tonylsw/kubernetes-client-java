@@ -87,19 +87,9 @@ spec:
                         Specifying '*' for a value selects all values for a given tag key.
                       maxProperties: 20
                       type: object
-                      x-kubernetes-validations:
-                      - message: empty tag keys or values aren't supported
-                        rule: self.all(k, k != '' && self[k] != '')
                   type: object
                 maxItems: 30
                 type: array
-                x-kubernetes-validations:
-                - message: expected at least one, got none, ['tags', 'id', 'name']
-                  rule: self.all(x, has(x.tags) || has(x.id) || has(x.name))
-                - message: '''id'' is mutually exclusive, cannot be set with a combination
-                    of other fields in amiSelectorTerms'
-                  rule: '!self.all(x, has(x.id) && (has(x.tags) || has(x.name) ||
-                    has(x.owner)))'
               associatePublicIPAddress:
                 description: AssociatePublicIPAddress controls if public IP addresses
                   are assigned to instances that are launched with the nodeclass.
@@ -201,9 +191,6 @@ spec:
                           - gp3
                           type: string
                       type: object
-                      x-kubernetes-validations:
-                      - message: snapshotID or volumeSize must be defined
-                        rule: has(self.snapshotID) || has(self.volumeSize)
                     rootVolume:
                       description: |-
                         RootVolume is a flag indicating if this device is mounted as kubelet root dir. You can
@@ -212,10 +199,6 @@ spec:
                   type: object
                 maxItems: 50
                 type: array
-                x-kubernetes-validations:
-                - message: must have only one blockDeviceMappings with rootVolume
-                  rule: self.filter(x, has(x.rootVolume)?x.rootVolume==true:false).size()
-                    <= 1
               context:
                 description: |-
                   Context is a Reserved field in EC2 APIs
@@ -232,9 +215,6 @@ spec:
                   The instance profile should already have a role assigned to it that Karpenter
                    has PassRole permission on for instance launch using this instanceProfile to succeed.
                 type: string
-                x-kubernetes-validations:
-                - message: instanceProfile cannot be empty
-                  rule: self != ''
               instanceStorePolicy:
                 description: InstanceStorePolicy specifies how to handle instance-store
                   disks.
@@ -333,11 +313,6 @@ spec:
                   This field may be made mutable in the future, assuming the correct garbage collection and drift handling is implemented
                   for the old instance profiles on an update.
                 type: string
-                x-kubernetes-validations:
-                - message: role cannot be empty
-                  rule: self != ''
-                - message: immutable field changed
-                  rule: self == oldSelf
               securityGroupSelectorTerms:
                 description: SecurityGroupSelectorTerms is a list of or security group
                   selector terms. The terms are ORed.
@@ -363,23 +338,9 @@ spec:
                         Specifying '*' for a value selects all values for a given tag key.
                       maxProperties: 20
                       type: object
-                      x-kubernetes-validations:
-                      - message: empty tag keys or values aren't supported
-                        rule: self.all(k, k != '' && self[k] != '')
                   type: object
                 maxItems: 30
                 type: array
-                x-kubernetes-validations:
-                - message: securityGroupSelectorTerms cannot be empty
-                  rule: self.size() != 0
-                - message: expected at least one, got none, ['tags', 'id', 'name']
-                  rule: self.all(x, has(x.tags) || has(x.id) || has(x.name))
-                - message: '''id'' is mutually exclusive, cannot be set with a combination
-                    of other fields in securityGroupSelectorTerms'
-                  rule: '!self.all(x, has(x.id) && (has(x.tags) || has(x.name)))'
-                - message: '''name'' is mutually exclusive, cannot be set with a combination
-                    of other fields in securityGroupSelectorTerms'
-                  rule: '!self.all(x, has(x.name) && (has(x.tags) || has(x.id)))'
               subnetSelectorTerms:
                 description: SubnetSelectorTerms is a list of or subnet selector terms.
                   The terms are ORed.
@@ -400,39 +361,15 @@ spec:
                         Specifying '*' for a value selects all values for a given tag key.
                       maxProperties: 20
                       type: object
-                      x-kubernetes-validations:
-                      - message: empty tag keys or values aren't supported
-                        rule: self.all(k, k != '' && self[k] != '')
                   type: object
                 maxItems: 30
                 type: array
-                x-kubernetes-validations:
-                - message: subnetSelectorTerms cannot be empty
-                  rule: self.size() != 0
-                - message: expected at least one, got none, ['tags', 'id']
-                  rule: self.all(x, has(x.tags) || has(x.id))
-                - message: '''id'' is mutually exclusive, cannot be set with a combination
-                    of other fields in subnetSelectorTerms'
-                  rule: '!self.all(x, has(x.id) && has(x.tags))'
               tags:
                 additionalProperties:
                   type: string
                 description: Tags to be applied on ec2 resources like instances and
                   launch templates.
                 type: object
-                x-kubernetes-validations:
-                - message: empty tag keys aren't supported
-                  rule: self.all(k, k != '')
-                - message: tag contains a restricted tag matching kubernetes.io/cluster/
-                  rule: self.all(k, !k.startsWith('kubernetes.io/cluster') )
-                - message: tag contains a restricted tag matching karpenter.sh/nodepool
-                  rule: self.all(k, k != 'karpenter.sh/nodepool')
-                - message: tag contains a restricted tag matching karpenter.sh/managed-by
-                  rule: self.all(k, k !='karpenter.sh/managed-by')
-                - message: tag contains a restricted tag matching karpenter.sh/nodeclaim
-                  rule: self.all(k, k !='karpenter.sh/nodeclaim')
-                - message: tag contains a restricted tag matching karpenter.k8s.aws/ec2nodeclass
-                  rule: self.all(k, k !='karpenter.k8s.aws/ec2nodeclass')
               userData:
                 description: |-
                   UserData to be applied to the provisioned nodes.
@@ -444,18 +381,6 @@ spec:
             - securityGroupSelectorTerms
             - subnetSelectorTerms
             type: object
-            x-kubernetes-validations:
-            - message: amiSelectorTerms is required when amiFamily == 'Custom'
-              rule: 'self.amiFamily == ''Custom'' ? self.amiSelectorTerms.size() !=
-                0 : true'
-            - message: must specify exactly one of ['role', 'instanceProfile']
-              rule: (has(self.role) && !has(self.instanceProfile)) || (!has(self.role)
-                && has(self.instanceProfile))
-            - message: changing from 'instanceProfile' to 'role' is not supported.
-                You must delete and recreate this node class if you want to change
-                this.
-              rule: (has(oldSelf.role) && has(self.role)) || (has(oldSelf.instanceProfile)
-                && has(self.instanceProfile))
           status:
             description: EC2NodeClassStatus contains the resolved state of the EC2NodeClass
             properties:
